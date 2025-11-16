@@ -34,3 +34,6 @@ jobs:
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
+      # Run for my test line
+      - name: Run my line without any issue
+        run: echo Hello, Prabha!!
