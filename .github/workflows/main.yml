@@ -1,0 +1,53 @@
+name: Node.JS - CICD/Workflow
+
+on:
+  push:
+    branches: main
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+
+      - name: use first node version from ${{matrix.node-version}}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{matrix.node-version}}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci # 'npm ci' is preferred over 'npm install' in CI environments
+        
+      - name: Run Build if applicable
+        run: npm run build || echo "NO build script has found"
+
+# --- JOB 2: Run Tests ---
+
+test:
+  needs: build
+  runs-on: ubuntu-latest
+
+  steps:
+    - name: checkout repository
+      uses: actions/checkout@v4
+
+    - name: use node.js 20.x for testing
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+        
+    - name: Instal dependencies
+      run: npm ci
+
+    - name: Run Unit test
+      run: npm test
