@@ -20,7 +20,7 @@ env:
   # Configurable runtime settings
   DOTNET_VERSION: '10.0.x' # Change to 8.0.x if needed
   BUILD_CONFIGURATION: Release
-  SOLUTION_PATH: src/Server/MyProductService.Api.slnx
+  SOLUTION_PATH: src/Server/MyProductService.Api/MyProductService.Api.slnx
   PUBLISH_CSPROJ: src/Server/MyProductService.Api/MyProductService.Api.csproj
   TEST_RESULTS_DIR: TestResults
 

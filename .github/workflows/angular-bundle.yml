@@ -68,7 +68,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: src/Client/package-lock.json
+          cache-dependency-path: src/Client/my-ng-store-app/package-lock.json
 
       - name: Display Node and npm versions
         run: |
@@ -129,14 +129,14 @@ jobs:
 
       - name: Verify dist output exists
         run: |
-          if [ ! -d src/Client/dist ] || [ -z "$(ls -A src/Client/dist)" ]; then
+          if [ ! -d src/Client/my-ng-store-app/dist ] || [ -z "$(ls -A src/Client/my-ng-store-app/dist)" ]; then
             echo "Angular build completed but dist output was not found."
             exit 1
           fi
 
       - name: Capture build metadata
         run: |
-          cat > src/Client/build-metadata.json <<EOF
+          cat > src/Client/my-ng-store-app/build-metadata.json <<EOF
           {
             "project": "My-ng-store-app",
             "application": "my ng store app Angular Bundle",
@@ -155,7 +155,7 @@ jobs:
         with:
           name: ${{ env.BUILD_ARTIFACT_NAME }}
           path: |
-            src/Client/dist
-            src/Client/build-metadata.json
+            src/Client/my-ng-store-app/dist
+            src/Client/my-ng-store-app/build-metadata.json
           if-no-files-found: error
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
