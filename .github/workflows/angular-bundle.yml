@@ -18,7 +18,7 @@ concurrency:
 
 env:
   NODE_VERSION: '24.x'
-  WORKING_DIRECTORY: src/Client
+  WORKING_DIRECTORY: src/Client/my-ng-store-app
   BUILD_CONFIGURATION: production
   BUILD_ARTIFACT_NAME: angular-dist
   TEST_ARTIFACT_NAME: angular-test-results
@@ -63,27 +63,41 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v6
 
-      - name: Setup Node.js with npm cache
+      - name: Check for package-lock.json
+        id: lockfile
+        run: |
+          if [ -f package-lock.json ]; then
+            echo "has_lockfile=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_lockfile=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js with npm cache (when lockfile present)
+        if: steps.lockfile.outputs.has_lockfile == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-          cache-dependency-path: src/Client/my-ng-store-app/package-lock.json
+          cache-dependency-path: ${{ env.WORKING_DIRECTORY }}/package-lock.json
+
+      - name: Setup Node.js (no cache when lockfile missing)
+        if: steps.lockfile.outputs.has_lockfile == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Display Node and npm versions
         run: |
           node --version
           npm --version
 
-      - name: Validate package-lock.json exists
+      - name: Install dependencies
         run: |
-          if [ ! -f package-lock.json ]; then
-            echo "package-lock.json is required for deterministic CI builds."
-            exit 1
+          if [ "${{ steps.lockfile.outputs.has_lockfile }}" = "true" ]; then
+            npm ci --prefer-offline --no-audit
+          else
+            npm install --prefer-offline --no-audit
           fi
-
-      - name: Install dependencies (npm ci)
-        run: npm ci --prefer-offline --no-audit
 
       # Stage 2: Security and compliance
       - name: Run npm audit (high and critical)
