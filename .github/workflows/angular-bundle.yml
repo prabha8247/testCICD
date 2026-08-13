@@ -5,11 +5,16 @@ on:
     branches:
       - main
       - dev
-      - 'feature-**'
+    paths:
+      - 'src/Client/**'
+      - '.github/workflows/angular-bundle.yml'
   pull_request:
     branches:
       - main
       - dev
+    paths:
+      - 'src/Client/**'
+      - '.github/workflows/angular-bundle.yml'
   workflow_dispatch: {}
 
 concurrency:
@@ -106,7 +111,7 @@ jobs:
       # Stage 3: Quality checks
       # - name: Validate lint script exists
       #   run: |
-      #     node -e "const pkg=require('./package.json'); if(!pkg.scripts || !pkg.scripts.lint){console.error('Missing npm lint script. Add a lint script to package.json to enforce quality checks.'); process.exit(1)}"
+      #     node -e "const pkg=require('./package.json'); if(!pkg.scripts || !pkg.scripts.lint){console.error('Missing npm lint script. Add a lint script to package.json to enforce quality checks...')}}"
 
       # - name: Run Angular ESLint
       #   run: npm run lint
@@ -143,25 +148,14 @@ jobs:
 
       - name: Verify dist output exists
         run: |
-          # Running from ${{ env.WORKING_DIRECTORY }} (defaults.working-directory is set).
-          # Prefer relative checks so paths resolve correctly inside the step's cwd.
-          if [ -d dist ] && [ -n "$(ls -A dist)" ]; then
-            echo "Found dist directory:"
-            ls -la dist
-          elif [ -d dist/my-ng-store-app ] && [ -n "$(ls -A dist/my-ng-store-app)" ]; then
-            echo "Found dist/my-ng-store-app directory:"
-            ls -la dist/my-ng-store-app
-          else
-            echo "Angular build completed but dist output was not found at 'dist' or 'dist/my-ng-store-app'."
-            echo "Working directory: $(pwd)"
-            echo "Listing current directory:" 
-            ls -la
+          if [ ! -d dist ] || [ -z "$(ls -A dist)" ]; then
+            echo "Angular build completed but dist output was not found."
             exit 1
           fi
 
       - name: Capture build metadata
         run: |
-          cat > src/Client/my-ng-store-app/build-metadata.json <<EOF
+          cat > build-metadata.json <<EOF
           {
             "project": "My-ng-store-app",
             "application": "my ng store app Angular Bundle",
@@ -180,7 +174,7 @@ jobs:
         with:
           name: ${{ env.BUILD_ARTIFACT_NAME }}
           path: |
-            src/Client/my-ng-store-app/dist
-            src/Client/my-ng-store-app/build-metadata.json
+            dist
+            build-metadata.json
           if-no-files-found: error
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
