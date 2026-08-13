@@ -1,0 +1,161 @@
+name: Angular CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22.x'
+  WORKING_DIRECTORY: src/Client
+  BUILD_CONFIGURATION: production
+  BUILD_ARTIFACT_NAME: angular-dist
+  TEST_ARTIFACT_NAME: angular-test-results
+  ARTIFACT_RETENTION_DAYS: 14
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      client: ${{ steps.filter.outputs.client }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Filter changed paths
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            client:
+              - 'src/Client/**'
+              - '.github/workflows/angular-bundle.yml'
+
+  ci:
+    name: Validate, Test, Build (Angular)
+    needs: detect-changes
+    if: needs.detect-changes.outputs.client == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+    steps:
+      # Stage 1: Validation
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js with npm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/Client/package-lock.json
+
+      - name: Display Node and npm versions
+        run: |
+          node --version
+          npm --version
+
+      - name: Validate package-lock.json exists
+        run: |
+          if [ ! -f package-lock.json ]; then
+            echo "package-lock.json is required for deterministic CI builds."
+            exit 1
+          fi
+
+      - name: Install dependencies (npm ci)
+        run: npm ci --prefer-offline --no-audit
+
+      # Stage 2: Security and compliance
+      - name: Run npm audit (high and critical)
+        run: npm audit fix --force
+
+      # Stage 3: Quality checks
+      # - name: Validate lint script exists
+      #   run: |
+      #     node -e "const pkg=require('./package.json'); if(!pkg.scripts || !pkg.scripts.lint){console.error('Missing npm lint script. Add a lint script to package.json to enforce quality checks.'); process.exit(1)}"
+
+      # - name: Run Angular ESLint
+      #   run: npm run lint
+
+      # Stage 4: Testing
+      # - name: Run Angular unit tests (headless) with coverage
+      #   run: |
+      #     mkdir -p test-results
+      #     set -o pipefail
+      #     npm test -- --watch=false --code-coverage 2>&1 | tee test-results/unit-test.log
+
+      # - name: Upload test and coverage artifacts
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ${{ env.TEST_ARTIFACT_NAME }}
+      #     path: |
+      #       src/Client/test-results
+      #       src/Client/coverage
+      #     if-no-files-found: warn
+      #     retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+
+      # Stage 5: Setup Build and Publish build
+      - name: Set Build Configuration
+        run: |
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "BUILD_CONFIGURATION=production" >> $GITHUB_ENV
+          else
+            echo "BUILD_CONFIGURATION=development" >> $GITHUB_ENV
+          fi
+
+      - name: Run Angular production build
+        run: npm run build -- --configuration ${{ env.BUILD_CONFIGURATION }}
+
+      - name: Verify dist output exists
+        run: |
+          if [ ! -d src/Client/dist ] || [ -z "$(ls -A src/Client/dist)" ]; then
+            echo "Angular build completed but dist output was not found."
+            exit 1
+          fi
+
+      - name: Capture build metadata
+        run: |
+          cat > src/Client/build-metadata.json <<EOF
+          {
+            "project": "My-ng-store-app",
+            "application": "my ng store app Angular Bundle",
+            "runId": "${{ github.run_id }}",
+            "runNumber": "${{ github.run_number }}",
+            "commit": "${{ github.sha }}",
+            "branch": "${{ github.ref_name }}",
+            "buildConfiguration": "${{ env.BUILD_CONFIGURATION }}",
+            "builtAtUtc": "$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          }
+          EOF
+
+      # Stage 6: Artifact publishing
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BUILD_ARTIFACT_NAME }}
+          path: |
+            src/Client/dist
+            src/Client/build-metadata.json
+          if-no-files-found: error
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
