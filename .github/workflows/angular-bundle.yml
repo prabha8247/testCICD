@@ -143,8 +143,19 @@ jobs:
 
       - name: Verify dist output exists
         run: |
-          if [ ! -d src/Client/my-ng-store-app/dist ] || [ -z "$(ls -A src/Client/my-ng-store-app/dist)" ]; then
-            echo "Angular build completed but dist output was not found."
+          # Running from ${{ env.WORKING_DIRECTORY }} (defaults.working-directory is set).
+          # Prefer relative checks so paths resolve correctly inside the step's cwd.
+          if [ -d dist ] && [ -n "$(ls -A dist)" ]; then
+            echo "Found dist directory:"
+            ls -la dist
+          elif [ -d dist/my-ng-store-app ] && [ -n "$(ls -A dist/my-ng-store-app)" ]; then
+            echo "Found dist/my-ng-store-app directory:"
+            ls -la dist/my-ng-store-app
+          else
+            echo "Angular build completed but dist output was not found at 'dist' or 'dist/my-ng-store-app'."
+            echo "Working directory: $(pwd)"
+            echo "Listing current directory:" 
+            ls -la
             exit 1
           fi
 
