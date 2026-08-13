@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '22.x'
+  NODE_VERSION: '24.x'
   WORKING_DIRECTORY: src/Client
   BUILD_CONFIGURATION: production
   BUILD_ARTIFACT_NAME: angular-dist
