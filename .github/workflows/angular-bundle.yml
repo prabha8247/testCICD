@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - dev
+      - 'feature-**'
     paths:
       - 'src/Client/**'
       - '.github/workflows/angular-bundle.yml'

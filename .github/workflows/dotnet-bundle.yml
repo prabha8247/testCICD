@@ -7,7 +7,7 @@ on:
       - 'src/Server/**'
       - '.github/workflows/dotnet-bundle.yml'
   pull_request:
-    branches: [ main, dev ]
+    branches: [ main, dev, 'feature-**' ]
     paths:
       - 'src/Server/**'
       - '.github/workflows/dotnet-bundle.yml'
