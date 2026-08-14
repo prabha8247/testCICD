@@ -175,7 +175,7 @@ jobs:
         with:
           name: ${{ env.BUILD_ARTIFACT_NAME }}
           path: |
-            dist
-            build-metadata.json
+            ${{ env.WORKING_DIRECTORY }}/dist/**
+            ${{ env.WORKING_DIRECTORY }}/build-metadata.json
           if-no-files-found: error
           retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
