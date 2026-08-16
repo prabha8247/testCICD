@@ -1,0 +1,96 @@
+name: .NET CI
+
+on:
+  push:
+    branches: [ main, dev, 'feature-**' ]
+    paths:
+      - 'src/Server/**'
+      - '.github/workflows/dotnet-bundle.yml'
+  pull_request:
+    branches: [ main, dev, 'feature-**' ]
+    paths:
+      - 'src/Server/**'
+      - '.github/workflows/dotnet-bundle.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Configurable runtime settings
+  DOTNET_VERSION: '10.0.x' # Change to 8.0.x if needed
+  BUILD_CONFIGURATION: Release
+  SOLUTION_PATH: src/Server/MyProductService.Api/MyProductService.Api.slnx
+  PUBLISH_CSPROJ: src/Server/MyProductService.Api/MyProductService.Api/MyProductService.Api.csproj
+  TEST_RESULTS_DIR: TestResults
+
+jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Filter changed paths
+        uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'src/Server/**'
+              - '.github/workflows/dotnet-bundle.yml'
+
+  build-test:
+    name: Build and Test
+    needs: detect-changes
+    if: needs.detect-changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+          cache-dependency-path: |
+            **/packages.lock.json
+            **/*.csproj
+
+      - name: Restore NuGet packages
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Build solution
+        run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
+
+      # - name: Run unit tests
+      #   run: dotnet test ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --logger "trx;LogFileName=tests.trx" --results-directory ${{ env.TEST_RESULTS_DIR }}
+
+      # - name: Publish test results
+      #   if: always()
+      #   uses: dorny/test-reporter@v1
+      #   with:
+      #     name: .NET Test Results
+      #     path: ${{ env.TEST_RESULTS_DIR }}/**/*.trx
+      #     reporter: dotnet-trx
+      #     fail-on-error: true
+
+      - name: Publish build output
+        run: dotnet publish ${{ env.PUBLISH_CSPROJ }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --output ./publish
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dotnet-publish
+          path: ./publish
+          if-no-files-found: error
+          retention-days: 30

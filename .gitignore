@@ -1,0 +1,79 @@
+# Node / Angular
+node_modules/
+dist/
+dist-*/
+out-tsc/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+/.angular
+.angular/cache
+
+# Angular build artifacts
+/coverage/
+/e2e/
+/.sass-cache
+/.vscode/
+
+# IDEs and editors
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Environment
+.env
+.env.*
+
+# Compiled output
+*.class
+*.dll
+*.exe
+*.so
+*.dylib
+
+# Visual Studio / .NET
+bin/
+obj/
+TestResults/
+*.user
+*.userosscache
+*.suo
+*.cache
+*.pdb
+*.publishsettings
+*.pubxml
+*.vs/
+_ReSharper*/
+
+# ASP.NET temporary files
+aspnet_client/
+_PublishedWebsites/
+
+# Rider
+.idea/
+
+# IIS Express
+.vs/ServiceFabricLocal/*
+/.vs/*
+
+# NuGet
+*.nupkg
+packages/
+project.lock.json
+artifacts/
+
+# Azure DevOps
+.agent/
+
+# Logs
+logs/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
